@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 
 using Hare.Configuration;
@@ -39,7 +40,10 @@ public class DefaultMessageSender<TMessage>(
             exchange: string.Empty,
             routingKey: string.Empty,
             mandatory: false,
-            basicProperties: new BasicProperties(),
+            basicProperties: new BasicProperties
+            {
+                CorrelationId = Activity.Current?.Id
+            },
             body: memory.ToArray(),
             cancellationToken: cancellationToken
         );
