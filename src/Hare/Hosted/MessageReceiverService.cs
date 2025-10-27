@@ -29,6 +29,12 @@ public sealed partial class MessageReceiverService<TMessage>(
     [LoggerMessage(LogLevel.Error, Message = "An error occured processing a {MessageType} message")]
     private static partial void LogMessageHandlerError(ILogger logger, Exception exception, Type messageType);
 
+    [LoggerMessage(LogLevel.Trace, Message = "Starting {MessageType} message handler")]
+    private static partial void LogMessageHandlerStarting(ILogger logger, Type messageType);
+
+    [LoggerMessage(LogLevel.Trace, Message = "Finished {MessageType} message handler")]
+    private static partial void LogMessageHandlerFinished(ILogger logger, Type messageType);
+
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -85,12 +91,14 @@ public sealed partial class MessageReceiverService<TMessage>(
             if (message is null)
                 throw new InvalidOperationException("Message could not be deserialized");
 
+            LogMessageHandlerStarting(logger, typeof(TMessage));
             await handler.HandleAsync(message!, _cancellationToken.GetValueOrDefault());
             await channel.BasicAckAsync(
                 @event.DeliveryTag,
                 multiple: false,
                 cancellationToken: _cancellationToken.GetValueOrDefault()
             );
+            LogMessageHandlerFinished(logger, typeof(TMessage));
         }
         catch (Exception exception)
         {
