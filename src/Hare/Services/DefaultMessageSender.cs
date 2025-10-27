@@ -13,20 +13,28 @@ namespace Hare.Services;
 public class DefaultMessageSender<TMessage>(
     IConnection connection,
     IOptions<HareMessageConfiguration<TMessage>> messageConfiguration
-) : IMessageSender<TMessage> where TMessage : class
+) : IMessageSender<TMessage>, IAsyncDisposable where TMessage : class
 {
-    /// <inheritdoc />
-    public async ValueTask SendMessageAsync(TMessage message, CancellationToken cancellationToken)
+    private readonly Task<IChannel> _channel = InitializeAsync(connection, messageConfiguration);
+
+    private static async Task<IChannel> InitializeAsync(IConnection connection, IOptions<HareMessageConfiguration<TMessage>> messageConfiguration)
     {
-        await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+        var channel = await connection.CreateChannelAsync();
         await channel.QueueDeclareAsync(
             queue: messageConfiguration.Value.QueueName,
             durable: messageConfiguration.Value.Durable,
             exclusive: messageConfiguration.Value.Exclusive,
             autoDelete: messageConfiguration.Value.AutoDelete,
-            arguments: messageConfiguration.Value.Arguments,
-            cancellationToken: cancellationToken
+            arguments: messageConfiguration.Value.Arguments
         );
+
+        return channel;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask SendMessageAsync(TMessage message, CancellationToken cancellationToken)
+    {
+        var channel = await _channel;
 
         using var memory = new MemoryStream();
         await JsonSerializer.SerializeAsync(
@@ -37,8 +45,8 @@ public class DefaultMessageSender<TMessage>(
         );
 
         await channel.BasicPublishAsync(
-            exchange: string.Empty,
-            routingKey: string.Empty,
+            exchange: messageConfiguration.Value.Exchange,
+            routingKey: messageConfiguration.Value.QueueName,
             mandatory: false,
             basicProperties: new BasicProperties
             {
@@ -47,5 +55,14 @@ public class DefaultMessageSender<TMessage>(
             body: memory.ToArray(),
             cancellationToken: cancellationToken
         );
+    }
+
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        var channel = await _channel;
+
+        await channel.DisposeAsync();;
     }
 }
