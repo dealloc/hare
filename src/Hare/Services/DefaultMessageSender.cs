@@ -11,6 +11,11 @@ using RabbitMQ.Client;
 
 namespace Hare.Services;
 
+/// <summary>
+/// Default implementation of the Hare <see cref="IMessageSender{TMessage}" />.
+///
+/// This implementation also performs optimization by keeping a <see cref="IChannel" /> alive during the scoped lifetime.
+/// </summary>
 public class DefaultMessageSender<TMessage>(
     IConnection connection,
     IOptions<HareMessageConfiguration<TMessage>> messageConfiguration
@@ -23,7 +28,7 @@ public class DefaultMessageSender<TMessage>(
         var channel = await connection.CreateChannelAsync();
 
         var arguments = messageConfiguration.Value.Arguments ?? new Dictionary<string, object?>();
-        arguments.TryAdd("x-dead-letter-exchange", messageConfiguration.Value.DeadletterExchange);
+        arguments.TryAdd("x-dead-letter-exchange", messageConfiguration.Value.DeadLetterExchange);
         await channel.QueueDeclareAsync(
             queue: messageConfiguration.Value.QueueName,
             durable: messageConfiguration.Value.Durable,

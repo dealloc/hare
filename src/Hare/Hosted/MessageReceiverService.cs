@@ -46,7 +46,7 @@ public sealed partial class MessageReceiverService<TMessage>(
         await SetupDeadLetterQueue(channel, cancellationToken);
 
         var arguments = messageConfiguration.Value.Arguments ?? new Dictionary<string, object?>();
-        arguments.TryAdd("x-dead-letter-exchange", messageConfiguration.Value.DeadletterExchange);
+        arguments.TryAdd("x-dead-letter-exchange", messageConfiguration.Value.DeadLetterExchange);
         await channel.QueueDeclareAsync(
             queue: messageConfiguration.Value.QueueName,
             durable: messageConfiguration.Value.Durable,
@@ -70,8 +70,8 @@ public sealed partial class MessageReceiverService<TMessage>(
 
     private async ValueTask SetupDeadLetterQueue(IChannel channel, CancellationToken cancellationToken)
     {
-        var queue = messageConfiguration.Value.DeadletterQueueName;
-        var exchange = messageConfiguration.Value.DeadletterExchange;
+        var queue = messageConfiguration.Value.DeadLetterQueueName;
+        var exchange = messageConfiguration.Value.DeadLetterExchange;
         if (string.IsNullOrWhiteSpace(queue) || string.IsNullOrWhiteSpace(exchange))
             return;
 
@@ -135,8 +135,8 @@ public sealed partial class MessageReceiverService<TMessage>(
             activity?.AddException(exception);
             LogMessageHandlerError(logger, exception, typeof(TMessage));
 
-            if (!string.IsNullOrWhiteSpace(messageConfiguration.Value.DeadletterExchange) &&
-                !string.IsNullOrWhiteSpace(messageConfiguration.Value.DeadletterQueueName))
+            if (!string.IsNullOrWhiteSpace(messageConfiguration.Value.DeadLetterExchange) &&
+                !string.IsNullOrWhiteSpace(messageConfiguration.Value.DeadLetterQueueName))
             {
                 await channel.BasicNackAsync(
                     @event.DeliveryTag,
