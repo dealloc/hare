@@ -1,0 +1,80 @@
+name: Publish to NuGet
+
+permissions:
+  contents: read
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+    inputs:
+      version:
+        description: 'Version to publish (leave empty to use Directory.Build.props)'
+        required: false
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Required for SourceLink
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Determine version
+      id: version
+      run: |
+        if [ -n "${{ inputs.version }}" ]; then
+          VERSION="${{ inputs.version }}"
+        elif [ -n "${{ github.event.release.tag_name }}" ]; then
+          # Remove 'v' prefix if present (e.g., v1.0.0 -> 1.0.0)
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+        else
+          # Fallback to Directory.Build.props version
+          VERSION=""
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Publishing version: ${VERSION:-'from Directory.Build.props'}"
+
+    - name: Pack
+      run: |
+        if [ -n "${{ steps.version.outputs.version }}" ]; then
+          dotnet pack src/Hare/Hare.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            -p:Version=${{ steps.version.outputs.version }}
+        else
+          dotnet pack src/Hare/Hare.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts
+        fi
+
+    - name: Publish to NuGet.org
+      run: |
+        dotnet nuget push ./artifacts/*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: ./artifacts/*.nupkg
+        retention-days: 90
