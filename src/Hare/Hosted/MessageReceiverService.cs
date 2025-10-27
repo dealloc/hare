@@ -43,12 +43,16 @@ public sealed partial class MessageReceiverService<TMessage>(
         var connection = scope.ServiceProvider.GetRequiredService<IConnection>();
 
         await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+        await SetupDeadLetterQueue(channel, cancellationToken);
+
+        var arguments = messageConfiguration.Value.Arguments ?? new Dictionary<string, object?>();
+        arguments.TryAdd("x-dead-letter-exchange", messageConfiguration.Value.DeadletterExchange);
         await channel.QueueDeclareAsync(
             queue: messageConfiguration.Value.QueueName,
             durable: messageConfiguration.Value.Durable,
             exclusive: messageConfiguration.Value.Exclusive,
             autoDelete: messageConfiguration.Value.AutoDelete,
-            arguments: messageConfiguration.Value.Arguments,
+            arguments,
             cancellationToken: cancellationToken
         );
 
@@ -62,6 +66,32 @@ public sealed partial class MessageReceiverService<TMessage>(
             cancellationToken: cancellationToken
         );
         await Task.Delay(Timeout.Infinite, cancellationToken);
+    }
+
+    private async ValueTask SetupDeadLetterQueue(IChannel channel, CancellationToken cancellationToken)
+    {
+        var queue = messageConfiguration.Value.DeadletterQueueName;
+        var exchange = messageConfiguration.Value.DeadletterExchange;
+        if (string.IsNullOrWhiteSpace(queue) || string.IsNullOrWhiteSpace(exchange))
+            return;
+
+        await channel.ExchangeDeclareAsync(
+            exchange,
+            type: "fanout", // TODO: allow configuration
+            durable: true,
+            autoDelete: false,
+            cancellationToken: cancellationToken
+        );
+
+        await channel.QueueDeclareAsync(
+            queue,
+            durable: messageConfiguration.Value.Durable,
+            exclusive: messageConfiguration.Value.Exclusive,
+            autoDelete: messageConfiguration.Value.AutoDelete,
+            cancellationToken: cancellationToken
+        );
+
+        await channel.QueueBindAsync(queue, exchange, string.Empty, cancellationToken:  cancellationToken);
     }
 
     private async Task ConsumerOnReceivedAsync(object sender, BasicDeliverEventArgs @event)
@@ -104,6 +134,16 @@ public sealed partial class MessageReceiverService<TMessage>(
         {
             activity?.AddException(exception);
             LogMessageHandlerError(logger, exception, typeof(TMessage));
+
+            if (!string.IsNullOrWhiteSpace(messageConfiguration.Value.DeadletterExchange) &&
+                !string.IsNullOrWhiteSpace(messageConfiguration.Value.DeadletterQueueName))
+            {
+                await channel.BasicNackAsync(
+                    @event.DeliveryTag,
+                    multiple: false,
+                    requeue: !@event.Redelivered
+                );
+            }
         }
     }
 }

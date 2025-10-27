@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Mime;
 using System.Text.Json;
 
 using Hare.Configuration;
@@ -20,12 +21,15 @@ public class DefaultMessageSender<TMessage>(
     private static async Task<IChannel> InitializeAsync(IConnection connection, IOptions<HareMessageConfiguration<TMessage>> messageConfiguration)
     {
         var channel = await connection.CreateChannelAsync();
+
+        var arguments = messageConfiguration.Value.Arguments ?? new Dictionary<string, object?>();
+        arguments.TryAdd("x-dead-letter-exchange", messageConfiguration.Value.DeadletterExchange);
         await channel.QueueDeclareAsync(
             queue: messageConfiguration.Value.QueueName,
             durable: messageConfiguration.Value.Durable,
             exclusive: messageConfiguration.Value.Exclusive,
             autoDelete: messageConfiguration.Value.AutoDelete,
-            arguments: messageConfiguration.Value.Arguments
+            arguments
         );
 
         return channel;
@@ -50,7 +54,9 @@ public class DefaultMessageSender<TMessage>(
             mandatory: false,
             basicProperties: new BasicProperties
             {
-                CorrelationId = Activity.Current?.Id
+                CorrelationId = Activity.Current?.Id,
+                ContentType = "application/json",
+                ContentEncoding = "UTF-8"
             },
             body: memory.ToArray(),
             cancellationToken: cancellationToken

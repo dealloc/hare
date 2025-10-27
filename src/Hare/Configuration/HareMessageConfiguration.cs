@@ -6,7 +6,11 @@ public sealed class HareMessageConfiguration<TMessage>
 {
     public string Exchange { get; set; } = string.Empty;
 
+    public string? DeadletterExchange { get; set; } = $"{typeof(TMessage).FullName ?? typeof(TMessage).Name}.dead-letter";
+
     public string QueueName { get; set; } = typeof(TMessage).FullName ?? typeof(TMessage).Name;
+
+    public string? DeadletterQueueName { get; set; } = $"{typeof(TMessage).FullName ?? typeof(TMessage).Name}.dead-letter";
 
     public bool Durable { get; set; } = false;
 
