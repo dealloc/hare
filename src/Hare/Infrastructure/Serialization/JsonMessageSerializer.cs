@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text.Json;
 
@@ -16,6 +17,16 @@ public sealed class JsonMessageSerializer<TMessage>(
 ) : IMessageSerializer<TMessage>
 {
     /// <inheritdoc />
+    [SuppressMessage(
+        "Trimming",
+        "IL2026:Members annotated with \'RequiresUnreferencedCodeAttribute\' require dynamic access otherwise can break functionality when trimming application code",
+        Justification = "Type information is provided through JsonSerializerOptions"
+    )]
+    [SuppressMessage(
+        "AOT",
+        "IL3050:Calling members annotated with \'RequiresDynamicCodeAttribute\' may break functionality when AOT compiling.",
+        Justification = "Type information is provided through JsonSerializerOptions"
+    )]
     public ValueTask<byte[]> SerializeAsync(TMessage message, CancellationToken cancellationToken)
     {
         var json = JsonSerializer.SerializeToUtf8Bytes(message, options.Value.JsonSerializerOptions);
@@ -23,6 +34,16 @@ public sealed class JsonMessageSerializer<TMessage>(
     }
 
     /// <inheritdoc />
+    [SuppressMessage(
+        "Trimming",
+        "IL2026:Members annotated with \'RequiresUnreferencedCodeAttribute\' require dynamic access otherwise can break functionality when trimming application code",
+        Justification = "Type information is provided through JsonSerializerOptions"
+    )]
+    [SuppressMessage(
+        "AOT",
+        "IL3050:Calling members annotated with \'RequiresDynamicCodeAttribute\' may break functionality when AOT compiling.",
+        Justification = "Type information is provided through JsonSerializerOptions"
+    )]
     public ValueTask<TMessage> DeserializeAsync(ReadOnlySpan<byte> data, CancellationToken cancellationToken)
     {
         var envelope = JsonSerializer.Deserialize<TMessage>(data, options.Value.JsonSerializerOptions);

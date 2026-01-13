@@ -148,7 +148,7 @@ public sealed class JsonMessageSerializer
     {
         // Arrange
         var services = new ServiceCollection();
-        services.Configure<MessageOptions<EmptyExampleMessage>>(_ => {});
+        services.Configure<MessageOptions<EmptyExampleMessage>>(_ => { });
         services.AddSingleton<IMessageSerializer<EmptyExampleMessage>, JsonMessageSerializer<EmptyExampleMessage>>();
         var provider = services.BuildServiceProvider();
 
