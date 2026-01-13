@@ -18,9 +18,12 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers the core services of Hare.
     /// </summary>
-    public static IServiceCollection AddHare(this IServiceCollection services)
+    public static IServiceCollection AddHare(
+        this IServiceCollection services,
+        Action<HareOptions>? configure = null
+    )
     {
-        services.Configure<HareOptions>(static _ => { });
+        services.Configure(configure ?? (static _ => { }));
         services.AddSingleton<IEnvelopeSerializer, JsonEnvelopeSerializer>();
 
         return services;
@@ -30,9 +33,12 @@ public static class ServiceCollectionExtensions
     /// Adds a message that Hare can send.
     /// </summary>
     /// <typeparam name="TMessage">The message type Hare should know about.</typeparam>
-    public static IServiceCollection AddHareMessage<TMessage>(this IServiceCollection services)
+    public static IServiceCollection AddHareMessage<TMessage>(
+        this IServiceCollection services,
+        Action<MessageOptions<TMessage>>? configure = null
+    )
     {
-        services.Configure<MessageOptions<TMessage>>(static _ => { });
+        services.Configure(configure ?? (static _ => { }));
         services.AddSingleton<IMessageSerializer<TMessage>, JsonMessageSerializer<TMessage>>();
 
         return services;
@@ -47,9 +53,10 @@ public static class ServiceCollectionExtensions
         TMessage,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler
     >(
-        this IServiceCollection services
+        this IServiceCollection services,
+        Action<MessageOptions<TMessage>>? configure = null
     ) where THandler : class, IMessageHandler<TMessage>
-        => AddHareMessage<TMessage>(services)
+        => AddHareMessage(services, configure)
             .AddScoped<IMessageHandler<TMessage>, THandler>()
             .AddHostedService<HostedListenerService<TMessage>>();
 }

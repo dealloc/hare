@@ -13,7 +13,8 @@ namespace Hare.Infrastructure.Serialization;
 /// Implements <see cref="IMessageSerializer{TMessage}"/> using System.Text.Json.
 /// </summary>
 internal sealed class JsonMessageSerializer<TMessage>(
-    IOptions<MessageOptions<TMessage>> options
+    IOptions<MessageOptions<TMessage>> options,
+    IOptions<HareOptions> hareOptions
 ) : IMessageSerializer<TMessage>
 {
     /// <inheritdoc />
@@ -29,7 +30,8 @@ internal sealed class JsonMessageSerializer<TMessage>(
     )]
     public ValueTask<byte[]> SerializeAsync(TMessage message, CancellationToken cancellationToken)
     {
-        var json = JsonSerializer.SerializeToUtf8Bytes(message, options.Value.JsonSerializerOptions);
+        var serializerOptions = options.Value.JsonSerializerOptions ?? hareOptions.Value.JsonSerializerOptions;
+        var json = JsonSerializer.SerializeToUtf8Bytes(message, serializerOptions);
         return ValueTask.FromResult(json);
     }
 
@@ -46,7 +48,8 @@ internal sealed class JsonMessageSerializer<TMessage>(
     )]
     public ValueTask<TMessage> DeserializeAsync(ReadOnlySpan<byte> data, CancellationToken cancellationToken)
     {
-        var envelope = JsonSerializer.Deserialize<TMessage>(data, options.Value.JsonSerializerOptions);
+        var serializerOptions = options.Value.JsonSerializerOptions ?? hareOptions.Value.JsonSerializerOptions;
+        var envelope = JsonSerializer.Deserialize<TMessage>(data, serializerOptions);
         if (envelope is null)
             throw new SerializationException($"Failed to deserialize {typeof(TMessage)} from JSON data");
 

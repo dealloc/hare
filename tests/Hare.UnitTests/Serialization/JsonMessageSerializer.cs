@@ -19,7 +19,10 @@ public sealed class JsonMessageSerializer
         // Arrange
         var services = new ServiceCollection();
         services.Configure<MessageOptions<SimpleExampleMessage>>(options =>
-            options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, ExampleJsonContext.Default)
+            options.JsonSerializerOptions = new()
+            {
+                TypeInfoResolverChain = { ExampleJsonContext.Default }
+            }
         );
         services.AddSingleton<IMessageSerializer<SimpleExampleMessage>, JsonMessageSerializer<SimpleExampleMessage>>();
         var provider = services.BuildServiceProvider();
@@ -40,7 +43,10 @@ public sealed class JsonMessageSerializer
         // Arrange
         var services = new ServiceCollection();
         services.Configure<MessageOptions<RecordExampleMessage>>(options =>
-            options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, ExampleJsonContext.Default)
+            options.JsonSerializerOptions = new()
+            {
+                TypeInfoResolverChain = { ExampleJsonContext.Default }
+            }
         );
         services.AddSingleton<IMessageSerializer<RecordExampleMessage>, JsonMessageSerializer<RecordExampleMessage>>();
         var provider = services.BuildServiceProvider();
@@ -61,7 +67,10 @@ public sealed class JsonMessageSerializer
         // Arrange
         var services = new ServiceCollection();
         services.Configure<MessageOptions<EmptyExampleMessage>>(options =>
-            options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, ExampleJsonContext.Default)
+            options.JsonSerializerOptions = new()
+            {
+                TypeInfoResolverChain = { ExampleJsonContext.Default }
+            }
         );
         services.AddSingleton<IMessageSerializer<EmptyExampleMessage>, JsonMessageSerializer<EmptyExampleMessage>>();
         var provider = services.BuildServiceProvider();
@@ -82,7 +91,10 @@ public sealed class JsonMessageSerializer
         // Arrange
         var services = new ServiceCollection();
         services.Configure<MessageOptions<SimpleExampleMessage>>(options =>
-            options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, ExampleJsonContext.Default)
+            options.JsonSerializerOptions = new()
+            {
+                TypeInfoResolverChain = { ExampleJsonContext.Default }
+            }
         );
         services.AddSingleton<IMessageSerializer<SimpleExampleMessage>, JsonMessageSerializer<SimpleExampleMessage>>();
         var provider = services.BuildServiceProvider();
@@ -105,7 +117,10 @@ public sealed class JsonMessageSerializer
         // Arrange
         var services = new ServiceCollection();
         services.Configure<MessageOptions<RecordExampleMessage>>(options =>
-            options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, ExampleJsonContext.Default)
+            options.JsonSerializerOptions = new()
+            {
+                TypeInfoResolverChain = { ExampleJsonContext.Default }
+            }
         );
         services.AddSingleton<IMessageSerializer<RecordExampleMessage>, JsonMessageSerializer<RecordExampleMessage>>();
         var provider = services.BuildServiceProvider();
@@ -128,7 +143,10 @@ public sealed class JsonMessageSerializer
         // Arrange
         var services = new ServiceCollection();
         services.Configure<MessageOptions<EmptyExampleMessage>>(options =>
-            options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, ExampleJsonContext.Default)
+            options.JsonSerializerOptions = new()
+            {
+                TypeInfoResolverChain = { ExampleJsonContext.Default }
+            }
         );
         services.AddSingleton<IMessageSerializer<EmptyExampleMessage>, JsonMessageSerializer<EmptyExampleMessage>>();
         var provider = services.BuildServiceProvider();
@@ -144,11 +162,11 @@ public sealed class JsonMessageSerializer
     }
 
     [Test]
-    public async Task Serialization_Throws_On_Reflection_In_AOT(CancellationToken cancellationToken)
+    public async Task Cannot_Serialize_With_Reflection_On_AOT(CancellationToken cancellationToken)
     {
         // Arrange
         var services = new ServiceCollection();
-        services.Configure<MessageOptions<EmptyExampleMessage>>(_ => { });
+        services.Configure<MessageOptions<EmptyExampleMessage>>(static _ => { });
         services.AddSingleton<IMessageSerializer<EmptyExampleMessage>, JsonMessageSerializer<EmptyExampleMessage>>();
         var provider = services.BuildServiceProvider();
 
@@ -157,10 +175,30 @@ public sealed class JsonMessageSerializer
         // Act
 
         // Assert
-        var exception = await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () => await serializer.DeserializeAsync("{}"u8, cancellationToken));
-        await Assert.That(exception).IsNotNull();
-        await Assert.That(exception?.Message)
-            .StartsWith(
-                "Reflection-based serialization has been disabled for this application");
+        await Assert.ThrowsExactlyAsync<NotSupportedException>(async () => await serializer.DeserializeAsync("{}"u8, cancellationToken));
+    }
+
+    [Test]
+    public async Task Can_Use_Global_JsonTypeInformation(CancellationToken cancellationToken)
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.Configure<HareOptions>(options =>
+            options.JsonSerializerOptions = new()
+            {
+                TypeInfoResolverChain = { ExampleJsonContext.Default }
+            }
+        );
+        services.AddSingleton<IMessageSerializer<SimpleExampleMessage>, JsonMessageSerializer<SimpleExampleMessage>>();
+        var provider = services.BuildServiceProvider();
+
+        var serializer = provider.GetRequiredService<IMessageSerializer<SimpleExampleMessage>>();
+
+        // Act
+        var result = await serializer.SerializeAsync(new SimpleExampleMessage { Text = "Test Message" }, cancellationToken);
+
+        // Assert
+        await Assert.That(result)
+            .IsEquivalentTo("{\"Text\":\"Test Message\"}"u8.ToArray(), CollectionOrdering.Matching);
     }
 }

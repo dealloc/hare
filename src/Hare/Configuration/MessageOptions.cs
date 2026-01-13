@@ -9,8 +9,9 @@ public sealed class MessageOptions<TMessage>
 {
     /// <summary>
     /// Used for (de)serialization of <typeparamref name="TMessage"/> messages when using JSON.
+    /// If set to <c>null</c> the <see cref="HareOptions.JsonSerializerOptions"/> will be used instead.
     /// </summary>
-    public JsonSerializerOptions JsonSerializerOptions { get; set; } = new();
+    public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
     /// The number of concurrent listeners that should be started for this message type.
