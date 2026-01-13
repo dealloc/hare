@@ -1,3 +1,7 @@
 <Solution>
-  <Folder Name="/tests/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Hare.IntegrationTests/Hare.IntegrationTests.csproj" />
+    <Project Path="tests/Hare.UnitTests/Hare.UnitTests.csproj" />
+  </Folder>
+  <Project Path="src\Hare\Hare.csproj" />
 </Solution>

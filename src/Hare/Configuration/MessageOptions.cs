@@ -1,0 +1,14 @@
+using System.Text.Json;
+
+namespace Hare.Configuration;
+
+/// <summary>
+/// Contains configuration options for handling messages of <typeparamref name="TMessage"/>.
+/// </summary>
+public sealed class MessageOptions<TMessage>
+{
+    /// <summary>
+    /// Used for (de)serialization of <typeparamref name="TMessage"/> messages when using JSON.
+    /// </summary>
+    public JsonSerializerOptions JsonSerializerOptions { get; set; } = new();
+}
