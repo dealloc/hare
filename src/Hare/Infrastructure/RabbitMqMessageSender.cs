@@ -1,5 +1,9 @@
+using System.Diagnostics;
+
 using Hare.Configuration;
 using Hare.Contracts;
+using Hare.Contracts.Serialization;
+using Hare.Models;
 
 using Microsoft.Extensions.Options;
 
@@ -12,19 +16,37 @@ namespace Hare.Infrastructure;
 /// </summary>
 public sealed class RabbitMqMessageSender<TMessage>(
     IConnection connection,
-    IOptions<MessageSendOptions<TMessage>> options
+    IMessageSerializer<TMessage> serializer,
+    IOptions<HareOptions> hareOptions,
+    IOptions<MessageSendOptions<TMessage>> sendOptions
 ) : IMessageSender<TMessage>
 {
     /// <inheritdoc />
-    public async ValueTask SendAsync(TMessage message, CancellationToken cancellationToken)
+    public ValueTask SendAsync(TMessage message, CancellationToken cancellationToken)
+        => SendAsync(message, default, cancellationToken);
+
+    /// <inheritdoc />
+    public async ValueTask SendAsync(TMessage message, MessageOptions options, CancellationToken cancellationToken)
     {
         await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+        var properties = new BasicProperties
+        {
+            ContentType = serializer.ContentType,
+            CorrelationId = Activity.Current?.Id,
+            Expiration = options.Expiration?.Seconds.ToString(),
+            MessageId = Guid.NewGuid().ToString(),
+            Type = typeof(TMessage).AssemblyQualifiedName,
+            AppId = hareOptions.Value.ApplicationName,
+            DeliveryMode = options.Persistent ? DeliveryModes.Persistent : DeliveryModes.Transient
+        };
+
+        var payload = await serializer.SerializeAsync(message, cancellationToken);
         await channel.BasicPublishAsync(
-            exchange: options.Value.Exchange,
-            routingKey: options.Value.RoutingKey,
-            mandatory: options.Value.Mandatory,
-            basicProperties: new BasicProperties(),
-            body: Memory<byte>.Empty,
+            exchange: sendOptions.Value.Exchange,
+            routingKey: sendOptions.Value.RoutingKey,
+            mandatory: sendOptions.Value.Mandatory,
+            basicProperties: properties,
+            body: payload,
             cancellationToken: cancellationToken
         );
     }

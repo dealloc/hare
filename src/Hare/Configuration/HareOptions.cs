@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 
 namespace Hare.Configuration;
@@ -7,6 +8,14 @@ namespace Hare.Configuration;
 /// </summary>
 public sealed class HareOptions
 {
+    /// <summary>
+    /// The name of the application to attach as metadata to messages.
+    /// </summary>
+    /// <remarks>
+    /// This allows identifying senders in a multiservice system.
+    /// </remarks>
+    public string ApplicationName { get; set; } = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
+
     /// <summary>
     /// Used for (de)serialization of message envelopes when using JSON.
     /// </summary>

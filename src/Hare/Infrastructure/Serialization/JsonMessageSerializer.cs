@@ -18,6 +18,9 @@ internal sealed class JsonMessageSerializer<TMessage>(
 ) : IMessageSerializer<TMessage>
 {
     /// <inheritdoc />
+    public string? ContentType => "application/json";
+
+    /// <inheritdoc />
     [SuppressMessage(
         "Trimming",
         "IL2026:Members annotated with \'RequiresUnreferencedCodeAttribute\' require dynamic access otherwise can break functionality when trimming application code",

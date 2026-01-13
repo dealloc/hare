@@ -7,6 +7,11 @@ namespace Hare.Contracts.Serialization;
 public interface IMessageSerializer<TMessage>
 {
     /// <summary>
+    /// Returns the MIME type of the format in which the message is serialized.
+    /// </summary>
+    string? ContentType { get; }
+
+    /// <summary>
     /// Serializes the message to a byte array.
     /// </summary>
     /// <param name="message">The message to serialize.</param>

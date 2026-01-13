@@ -65,6 +65,7 @@ internal sealed class HareBuilder(IServiceCollection services) : IHareBuilder
     THandler
     >() where THandler : class, IMessageHandler<TMessage>
     {
+        RegisterConventionBasedOptions<TMessage>();
         Services.AddHareMessage<TMessage, THandler>();
 
         return new HareMessageBuilder<TMessage>(this);
