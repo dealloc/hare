@@ -16,4 +16,12 @@ public sealed class HareOptions
     {
         TypeInfoResolverChain = { HareJsonSerializerContext.Default }
     };
+
+    /// <summary>
+    /// Whether <b>ALL</b> registered messages should be automatically provisioned.
+    /// </summary>
+    /// <remarks>
+    /// You can override this on a per-message basis by setting <see cref="MessageOptions{TMessage}.AutoProvision"/>.
+    /// </remarks>
+    public bool AutoProvision { get; set; } = false;
 }
