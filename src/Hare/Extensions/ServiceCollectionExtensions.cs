@@ -35,7 +35,6 @@ public static class ServiceCollectionExtensions
     )
     {
         services.Configure(configure ?? (static _ => { }));
-        services.AddSingleton<IEnvelopeSerializer, JsonEnvelopeSerializer>();
 
         return new HareBuilder(services);
     }

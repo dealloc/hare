@@ -175,7 +175,9 @@ public sealed class JsonMessageSerializer
         // Act
 
         // Assert
-        await Assert.ThrowsExactlyAsync<NotSupportedException>(async () => await serializer.DeserializeAsync("{}"u8, cancellationToken));
+        var exception = await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () => await serializer.DeserializeAsync("{}"u8, cancellationToken));
+        await Assert.That(exception?.Message)
+            .StartsWith("Reflection-based serialization has been disabled for this application");
     }
 
     [Test]
