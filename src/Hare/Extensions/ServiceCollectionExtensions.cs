@@ -5,6 +5,8 @@ using Hare.Configuration;
 using Hare.Contracts;
 using Hare.Contracts.Serialization;
 using Hare.Contracts.Transport;
+using Hare.Infrastructure;
+using Hare.Infrastructure.Hosted;
 using Hare.Infrastructure.Serialization;
 using Hare.Infrastructure.Transport;
 

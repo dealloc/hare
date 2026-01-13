@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Hare.Infrastructure.Transport;
+namespace Hare.Infrastructure.Hosted;
 
 /// <summary>
 /// Manages launching and monitoring instances of <see cref="IListener{TMessage}" /> instances for <typeparamref name="TMessage" />.

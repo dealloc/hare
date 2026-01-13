@@ -117,5 +117,7 @@ public sealed class DefaultRoutingConventionTests
     internal sealed class HTTPRequest;
     internal sealed class SendHTTP;
     internal sealed class Order123Event;
+#pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
     internal sealed class lowercase;
+#pragma warning restore CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
 }

@@ -1,12 +1,11 @@
 using Hare.Configuration;
 using Hare.Contracts;
-using Hare.Contracts.Serialization;
 
 using Microsoft.Extensions.Options;
 
 using RabbitMQ.Client;
 
-namespace Hare.Infrastructure.Transport;
+namespace Hare.Infrastructure;
 
 /// <summary>
 /// RabbitMQ implementation of <see cref="IMessageSender{TMessage}" />.
