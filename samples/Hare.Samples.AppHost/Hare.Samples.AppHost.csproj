@@ -1,0 +1,19 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>c7138662-c771-427d-9f06-1524dae6f888</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CommunityToolkit.Aspire.Hosting.LavinMQ" Version="13.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Hare.Samples.ExampleConsole\Hare.Samples.ExampleConsole.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,4 +1,9 @@
 <Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/Hare.Samples.ServiceDefaults\Hare.Samples.ServiceDefaults.csproj" />
+    <Project Path="samples/Hare.Samples.AppHost/Hare.Samples.AppHost.csproj" />
+    <Project Path="samples/Hare.Samples.ExampleConsole/Hare.Samples.ExampleConsole.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Hare.IntegrationTests/Hare.IntegrationTests.csproj" />
     <Project Path="tests/Hare.UnitTests/Hare.UnitTests.csproj" />

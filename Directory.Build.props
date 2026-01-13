@@ -46,6 +46,7 @@
 
 	<!-- Automatically expose internals to test projects -->
 	<ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
-		<InternalsVisibleTo Include="$(MSBuildProjectName).Tests" />
+		<InternalsVisibleTo Include="$(MSBuildProjectName).UnitTests" />
+		<InternalsVisibleTo Include="$(MSBuildProjectName).IntegrationTests" />
 	</ItemGroup>
 </Project>

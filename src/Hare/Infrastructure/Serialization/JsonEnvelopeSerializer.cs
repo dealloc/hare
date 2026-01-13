@@ -13,7 +13,7 @@ namespace Hare.Infrastructure.Serialization;
 /// <summary>
 /// Implements <see cref="IEnvelopeSerializer"/> using System.Text.Json.
 /// </summary>
-public sealed class JsonEnvelopeSerializer(
+internal sealed class JsonEnvelopeSerializer(
     IOptions<HareOptions> options
 ) : IEnvelopeSerializer
 {

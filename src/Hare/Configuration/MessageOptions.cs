@@ -11,4 +11,9 @@ public sealed class MessageOptions<TMessage>
     /// Used for (de)serialization of <typeparamref name="TMessage"/> messages when using JSON.
     /// </summary>
     public JsonSerializerOptions JsonSerializerOptions { get; set; } = new();
+
+    /// <summary>
+    /// The number of concurrent listeners that should be started for this message type.
+    /// </summary>
+    public ulong ConcurrentListeners { get; set; } = 1;
 }

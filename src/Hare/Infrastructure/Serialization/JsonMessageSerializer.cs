@@ -12,7 +12,7 @@ namespace Hare.Infrastructure.Serialization;
 /// <summary>
 /// Implements <see cref="IMessageSerializer{TMessage}"/> using System.Text.Json.
 /// </summary>
-public sealed class JsonMessageSerializer<TMessage>(
+internal sealed class JsonMessageSerializer<TMessage>(
     IOptions<MessageOptions<TMessage>> options
 ) : IMessageSerializer<TMessage>
 {

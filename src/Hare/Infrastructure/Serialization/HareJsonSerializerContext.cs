@@ -8,4 +8,4 @@ namespace Hare.Infrastructure.Serialization;
 /// Provides source-generated JSON type information for Hare models.
 /// </summary>
 [JsonSerializable(typeof(Envelope))]
-public sealed partial class HareJsonSerializerContext : JsonSerializerContext;
+internal sealed partial class HareJsonSerializerContext : JsonSerializerContext;

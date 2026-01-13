@@ -2,7 +2,6 @@ using Hare.Configuration;
 using Hare.Contracts.Serialization;
 using Hare.Infrastructure.Serialization;
 using Hare.Models;
-using Hare.UnitTests.Examples;
 
 using Microsoft.Extensions.DependencyInjection;
 
