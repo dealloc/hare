@@ -17,14 +17,14 @@ public sealed class JsonEnvelopeSerializer(
 ) : IEnvelopeSerializer
 {
     /// <inheritdoc />
-    public ValueTask<byte[]> Serialize(Envelope envelope)
+    public ValueTask<byte[]> SerializeAsync(Envelope envelope, CancellationToken cancellationToken)
     {
         var json = JsonSerializer.SerializeToUtf8Bytes(envelope, options.Value.JsonSerializerOptions);
         return ValueTask.FromResult(json);
     }
 
     /// <inheritdoc />
-    public ValueTask<Envelope> Deserialize(ReadOnlySpan<byte> data)
+    public ValueTask<Envelope> DeserializeAsync(ReadOnlySpan<byte> data, CancellationToken cancellationToken)
     {
         var envelope = JsonSerializer.Deserialize<Envelope>(data, options.Value.JsonSerializerOptions);
         if (envelope is null)

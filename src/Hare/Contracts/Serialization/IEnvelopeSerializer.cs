@@ -11,11 +11,13 @@ public interface IEnvelopeSerializer
     /// Serializes the envelope to a byte array.
     /// </summary>
     /// <param name="envelope">The envelope to serialize.</param>
-    ValueTask<byte[]> Serialize(Envelope envelope);
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    ValueTask<byte[]> SerializeAsync(Envelope envelope, CancellationToken cancellationToken);
 
     /// <summary>
     /// Deserializes the envelope from a byte array.
     /// </summary>
     /// <param name="data">The byte array to deserialize the envelope from.</param>
-    ValueTask<Envelope> Deserialize(ReadOnlySpan<byte> data);
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    ValueTask<Envelope> DeserializeAsync(ReadOnlySpan<byte> data, CancellationToken cancellationToken);
 }

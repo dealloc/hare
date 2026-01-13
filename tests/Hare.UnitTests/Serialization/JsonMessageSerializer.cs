@@ -9,6 +9,8 @@ using TUnit.Assertions.Enums;
 
 namespace Hare.UnitTests.Serialization;
 
+[Category("Unit")]
+[Category("Serialization")]
 public sealed class JsonMessageSerializer
 {
     [Test]
