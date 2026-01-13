@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 
 namespace Hare.Infrastructure.Transport;
 
@@ -34,12 +35,19 @@ public sealed class RabbitMqListener<TMessage>(
     public async Task ListenForIncomingMessagesAsync(CancellationToken cancellationToken)
     {
         _channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
-        await _channel.QueueDeclarePassiveAsync(
-            receiveOptions.Value.QueueName
-            ?? throw new ArgumentNullException(nameof(receiveOptions.Value.QueueName),
-                $"Queue name of {typeof(TMessage).FullName} should not be null."),
-            cancellationToken: cancellationToken
-        );
+        try
+        {
+            await _channel.QueueDeclarePassiveAsync(
+                receiveOptions.Value.QueueName
+                ?? throw new ArgumentNullException(nameof(receiveOptions.Value.QueueName),
+                    $"Queue name of {typeof(TMessage).FullName} should not be null."),
+                cancellationToken: cancellationToken
+            );
+        }
+        catch (OperationInterruptedException exception) when (exception.ShutdownReason?.ReplyCode is 404)
+        {
+            throw new InvalidOperationException($"Queue {receiveOptions.Value.QueueName} does not exist.", exception);
+        }
 
         _consumer = new AsyncEventingBasicConsumer(_channel);
         _consumer.ReceivedAsync += OnMessageReceivedAsync;
@@ -62,7 +70,7 @@ public sealed class RabbitMqListener<TMessage>(
         try
         {
             await using var scope = scopeFactory.CreateAsyncScope();
-            var handlers = scope.ServiceProvider.GetServices<IMessageHandler<TMessage>>().ToList();
+            var handlers = scope.ServiceProvider.GetServices<IMessageHandler<TMessage>>();
             var context = new MessageContext
             {
                 Redelivered = @event.Redelivered,
@@ -93,18 +101,24 @@ public sealed class RabbitMqListener<TMessage>(
 
                     throw;
                 }
-
-                await _channel!.BasicAckAsync(
-                    deliveryTag: @event.DeliveryTag,
-                    multiple: false,
-                    cancellationToken: @event.CancellationToken
-                );
             }
+
+            await _channel!.BasicAckAsync(
+                deliveryTag: @event.DeliveryTag,
+                multiple: false,
+                cancellationToken: @event.CancellationToken
+            );
         }
         catch (Exception)
         {
-            if (_channel is not null)
-                await _channel.CloseAsync(541, "Handler threw an error", @event.CancellationToken);
+            await _channel!.BasicNackAsync(
+                deliveryTag: @event.DeliveryTag,
+                multiple: false,
+                requeue: @event.Redelivered is false,
+                cancellationToken: @event.CancellationToken
+            );
+
+            await _channel!.CloseAsync(541, "Handler threw an error", @event.CancellationToken);
 
             throw;
         }

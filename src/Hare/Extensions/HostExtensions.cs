@@ -23,7 +23,7 @@ public static class HostExtensions
 
         foreach (var provisioner in provisioners)
         {
-            var activity = source.StartActivity($"{provisioner.GetType().FullName}");
+            using var activity = source.StartActivity($"{provisioner.GetType().FullName}");
 
             try
             {

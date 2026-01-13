@@ -1,4 +1,5 @@
 <Solution>
+  <Folder Name="/benchmarks/" />
   <Folder Name="/samples/">
     <Project Path="samples/Hare.Samples.ServiceDefaults\Hare.Samples.ServiceDefaults.csproj" />
     <Project Path="samples/Hare.Samples.AppHost/Hare.Samples.AppHost.csproj" />

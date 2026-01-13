@@ -11,7 +11,7 @@ namespace Hare.UnitTests.Serialization;
 
 [Category("Unit")]
 [Category("Serialization")]
-public sealed class JsonMessageSerializer
+public sealed class JsonMessageSerializerTests
 {
     [Test]
     public async Task Can_Serialize_SimpleExampleMessage(CancellationToken cancellationToken)

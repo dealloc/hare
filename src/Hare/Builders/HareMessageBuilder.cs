@@ -80,6 +80,7 @@ internal sealed class HareMessageBuilder<TMessage>(HareBuilder parent) : IHareMe
         return this;
     }
 
+    /// <inheritdoc />
     public IHareMessageBuilder<TMessage> WithJsonSerializerContext(JsonSerializerContext context)
     {
         Services.Configure<MessageOptions<TMessage>>(options =>

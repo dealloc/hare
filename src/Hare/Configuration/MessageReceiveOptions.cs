@@ -3,7 +3,7 @@ namespace Hare.Configuration;
 /// <summary>
 /// Describes how messages should be received.
 /// </summary>
-public class MessageReceiveOptions<TMessage>
+public sealed class MessageReceiveOptions<TMessage>
 {
     /// <summary>
     /// The name of the exchange to send the message to.
@@ -28,13 +28,13 @@ public class MessageReceiveOptions<TMessage>
     public bool Durable { get; set; } = true;
 
     /// <summary>
-    /// Should the queue use be limited to it's declaring connection?
+    /// Should the queue use be limited to its declaring connection?
     /// This will cause the queue to be deleted when the declaring connection closes.
     /// </summary>
     public bool Exclusive { get; set; }
 
     /// <summary>
-    /// Should this queue be auto-deleted when it's last consumer unsubscribes.
+    /// Should this queue be auto-deleted when its last consumer unsubscribes.
     /// </summary>
     public bool AutoDelete { get; set; }
 

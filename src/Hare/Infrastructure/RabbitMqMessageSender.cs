@@ -38,7 +38,7 @@ public sealed class RabbitMqMessageSender<TMessage>(
             CorrelationId = Activity.Current?.Id,
             Expiration = options.Expiration?.Seconds.ToString(),
             MessageId = Guid.NewGuid().ToString(),
-            Type = typeof(TMessage).AssemblyQualifiedName,
+            Type = typeof(TMessage).FullName,
             AppId = hareOptions.Value.ApplicationName,
             DeliveryMode = options.Persistent ? DeliveryModes.Persistent : DeliveryModes.Transient
         };
