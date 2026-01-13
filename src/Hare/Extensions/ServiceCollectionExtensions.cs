@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
+using Hare.Builders;
 using Hare.Configuration;
 using Hare.Contracts;
 using Hare.Contracts.Serialization;
@@ -20,9 +21,11 @@ namespace Hare.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the core services of Hare.
+    /// Registers the core services of Hare and returns a builder for further configuration.
     /// </summary>
-    public static IServiceCollection AddHare(
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="configure">Optional configuration for global Hare options.</param>
+    public static IHareBuilder AddHare(
         this IServiceCollection services,
         Action<HareOptions>? configure = null
     )
@@ -30,7 +33,7 @@ public static class ServiceCollectionExtensions
         services.Configure(configure ?? (static _ => { }));
         services.AddSingleton<IEnvelopeSerializer, JsonEnvelopeSerializer>();
 
-        return services;
+        return new HareBuilder(services);
     }
 
     /// <summary>

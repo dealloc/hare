@@ -8,16 +8,11 @@ builder.AddServiceDefaults();
 
 builder.AddRabbitMQClient("queue");
 
-builder.Services.AddHare(options =>
-    {
-        options.AutoProvision = true;
-        options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, ExampleJsonContext.Default);
-    })
-    .AddHareMessage<ExampleMessage, ExampleMessageHandler>(
-        configureReceive: options => options.QueueName = "test-queue",
-        configureSend: options => options.RoutingKey = "test-queue"
-    );
-
+builder.Services.AddHare()
+    .WithConventionalRouting()
+    .WithAutoProvisioning()
+    .WithJsonSerializerContext(ExampleJsonContext.Default)
+    .AddHareMessage<ExampleMessage, ExampleMessageHandler>();
 
 builder.Services.AddHostedService<Worker>();
 
