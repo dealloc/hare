@@ -53,6 +53,7 @@ public static class ServiceCollectionExtensions
         services.Configure(configureSend ?? (static _ => { }));
         services.AddSingleton<IMessageSerializer<TMessage>, JsonMessageSerializer<TMessage>>();
         services.AddSingleton<IMessageSender<TMessage>, RabbitMqMessageSender<TMessage>>();
+        services.AddSingleton<IListener<TMessage>, RabbitMqListener<TMessage>>();
         services.AddScoped<IMessageProvisioner>(static provider => new DefaultMessageProvisioner<TMessage>(
             provider.GetRequiredService<IOptions<MessageOptions<TMessage>>>(),
             provider.GetRequiredService<IOptions<HareOptions>>(),

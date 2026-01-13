@@ -21,6 +21,8 @@ public sealed class RabbitMqMessageSender<TMessage>(
     IOptions<MessageSendOptions<TMessage>> sendOptions
 ) : IMessageSender<TMessage>
 {
+    private static readonly ActivitySource _source = new($"{Constants.ACTIVITY_PREFIX}.RabbitMqMessageSender#{typeof(TMessage).Name}");
+
     /// <inheritdoc />
     public ValueTask SendAsync(TMessage message, CancellationToken cancellationToken)
         => SendAsync(message, default, cancellationToken);
@@ -28,6 +30,7 @@ public sealed class RabbitMqMessageSender<TMessage>(
     /// <inheritdoc />
     public async ValueTask SendAsync(TMessage message, MessageOptions options, CancellationToken cancellationToken)
     {
+        using var activity = _source.StartActivity(nameof(SendAsync), ActivityKind.Producer);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
         var properties = new BasicProperties
         {

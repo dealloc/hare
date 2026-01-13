@@ -1,6 +1,13 @@
-using Hare.Configuration;
-using Hare.Contracts.Transport;
+using System.Diagnostics;
 
+using Hare.Configuration;
+using Hare.Contracts;
+using Hare.Contracts.Serialization;
+using Hare.Contracts.Transport;
+using Hare.Models;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using RabbitMQ.Client;
@@ -13,11 +20,15 @@ namespace Hare.Infrastructure.Transport;
 /// </summary>
 public sealed class RabbitMqListener<TMessage>(
     IConnection connection,
-    IOptions<MessageReceiveOptions<TMessage>> receiveOptions
+    IServiceScopeFactory scopeFactory,
+    ILogger<RabbitMqListener<TMessage>> logger,
+    IOptions<MessageReceiveOptions<TMessage>> receiveOptions,
+    IMessageSerializer<TMessage> serializer
 ) : IListener<TMessage>, IAsyncDisposable
 {
     private IChannel? _channel;
     private AsyncEventingBasicConsumer? _consumer;
+    private static readonly ActivitySource _source = new($"{Constants.ACTIVITY_PREFIX}.RabbitMqListener#{typeof(TMessage).Name}");
 
     /// <inheritdoc />
     public async Task ListenForIncomingMessagesAsync(CancellationToken cancellationToken)
@@ -31,7 +42,14 @@ public sealed class RabbitMqListener<TMessage>(
         );
 
         _consumer = new AsyncEventingBasicConsumer(_channel);
-        _consumer.ReceivedAsync += onMessageReceivedAsync;
+        _consumer.ReceivedAsync += OnMessageReceivedAsync;
+
+        await _channel.BasicConsumeAsync(
+            queue: receiveOptions.Value.QueueName,
+            autoAck: false,
+            consumer: _consumer,
+            cancellationToken: cancellationToken
+        );
 
         await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
     }
@@ -39,9 +57,57 @@ public sealed class RabbitMqListener<TMessage>(
     /// <summary>
     /// Called when RabbitMQ receives a message.
     /// </summary>
-    private Task onMessageReceivedAsync(object sender, BasicDeliverEventArgs @event)
+    private async Task OnMessageReceivedAsync(object sender, BasicDeliverEventArgs @event)
     {
-        throw new NotImplementedException();
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var handlers = scope.ServiceProvider.GetServices<IMessageHandler<TMessage>>().ToList();
+            var context = new MessageContext
+            {
+                Redelivered = @event.Redelivered,
+                Exchange = @event.Exchange,
+                RoutingKey = @event.RoutingKey,
+                Properties = @event.BasicProperties,
+                Payload = @event.Body
+            };
+            var message = await serializer.DeserializeAsync(@event.Body, @event.CancellationToken);
+
+            foreach (var handler in handlers)
+            {
+                using var activity = _source.StartActivity($"{handler.GetType().Name}", ActivityKind.Consumer);
+                activity?.AddTag("message.type", typeof(TMessage).AssemblyQualifiedName);
+                if (activity is not null && string.IsNullOrWhiteSpace(@event.BasicProperties.CorrelationId) is false)
+                    activity.SetParentId(@event.BasicProperties.CorrelationId);
+
+                try
+                {
+                    logger.LogTrace("Handling message of type {MessageType}", typeof(TMessage).Name);
+                    await handler.HandleAsync(message, context, @event.CancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    activity?.AddException(exception);
+                    activity?.SetStatus(ActivityStatusCode.Error);
+                    logger.LogError(exception, "Failed to handle message of type {MessageType}", typeof(TMessage).Name);
+
+                    throw;
+                }
+
+                await _channel!.BasicAckAsync(
+                    deliveryTag: @event.DeliveryTag,
+                    multiple: false,
+                    cancellationToken: @event.CancellationToken
+                );
+            }
+        }
+        catch (Exception)
+        {
+            if (_channel is not null)
+                await _channel.CloseAsync(541, "Handler threw an error", @event.CancellationToken);
+
+            throw;
+        }
     }
 
     /// <inheritdoc />

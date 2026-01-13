@@ -102,7 +102,7 @@ public sealed class JsonMessageSerializer
         var serializer = provider.GetRequiredService<IMessageSerializer<SimpleExampleMessage>>();
 
         // Act
-        var result = await serializer.DeserializeAsync("{\"Text\":\"Test Message\"}"u8, cancellationToken);
+        var result = await serializer.DeserializeAsync("{\"Text\":\"Test Message\"}"u8.ToArray(), cancellationToken);
 
         // Assert
         await Assert.That(result)
@@ -128,7 +128,7 @@ public sealed class JsonMessageSerializer
         var serializer = provider.GetRequiredService<IMessageSerializer<RecordExampleMessage>>();
 
         // Act
-        var result = await serializer.DeserializeAsync("{\"Text\":\"Test Message\"}"u8, cancellationToken);
+        var result = await serializer.DeserializeAsync("{\"Text\":\"Test Message\"}"u8.ToArray(), cancellationToken);
 
         // Assert
         await Assert.That(result)
@@ -154,7 +154,7 @@ public sealed class JsonMessageSerializer
         var serializer = provider.GetRequiredService<IMessageSerializer<EmptyExampleMessage>>();
 
         // Act
-        var result = await serializer.DeserializeAsync("{}"u8, cancellationToken);
+        var result = await serializer.DeserializeAsync("{}"u8.ToArray(), cancellationToken);
 
         // Assert
         await Assert.That(result)
@@ -175,7 +175,7 @@ public sealed class JsonMessageSerializer
         // Act
 
         // Assert
-        var exception = await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () => await serializer.DeserializeAsync("{}"u8, cancellationToken));
+        var exception = await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () => await serializer.DeserializeAsync("{}"u8.ToArray(), cancellationToken));
         await Assert.That(exception?.Message)
             .StartsWith("Reflection-based serialization has been disabled for this application");
     }

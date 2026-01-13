@@ -49,10 +49,10 @@ internal sealed class JsonMessageSerializer<TMessage>(
         "IL3050:Calling members annotated with \'RequiresDynamicCodeAttribute\' may break functionality when AOT compiling.",
         Justification = "Type information is provided through JsonSerializerOptions"
     )]
-    public ValueTask<TMessage> DeserializeAsync(ReadOnlySpan<byte> data, CancellationToken cancellationToken)
+    public ValueTask<TMessage> DeserializeAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
     {
         var serializerOptions = options.Value.JsonSerializerOptions ?? hareOptions.Value.JsonSerializerOptions;
-        var envelope = JsonSerializer.Deserialize<TMessage>(data, serializerOptions);
+        var envelope = JsonSerializer.Deserialize<TMessage>(data.Span, serializerOptions);
         if (envelope is null)
             throw new SerializationException($"Failed to deserialize {typeof(TMessage)} from JSON data");
 

@@ -1,3 +1,4 @@
+using Hare;
 using Hare.Extensions;
 using Hare.Samples.ExampleConsole;
 using Hare.Samples.ExampleConsole.Handles;
@@ -7,6 +8,9 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
 
 builder.AddRabbitMQClient("queue");
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource($"{Constants.ACTIVITY_PREFIX}.*"));
 
 builder.Services.AddHare()
     .WithConventionalRouting()
