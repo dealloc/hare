@@ -30,7 +30,7 @@ public class DefaultRoutingConvention : IRoutingConvention
 
     /// <inheritdoc />
     public virtual string GetExchange(Type messageType)
-        => Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
+        => ToKebabCase(Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty);
 
     /// <inheritdoc />
     public virtual string GetExchangeType(Type messageType)
@@ -49,6 +49,8 @@ public class DefaultRoutingConvention : IRoutingConvention
         for (var i = 0; i < name.Length; i++)
         {
             var c = name[i];
+            if (c == '.')
+                continue;
             if (char.IsUpper(c))
             {
                 if (i > 0)
