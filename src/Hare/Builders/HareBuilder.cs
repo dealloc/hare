@@ -4,18 +4,11 @@ using System.Text.Json.Serialization;
 using Hare.Configuration;
 using Hare.Contracts;
 using Hare.Contracts.Routing;
-using Hare.Contracts.Serialization;
-using Hare.Contracts.Transport;
-using Hare.Infrastructure;
-using Hare.Infrastructure.Hosted;
-using Hare.Infrastructure.Serialization;
-using Hare.Infrastructure.Transport;
+using Hare.Extensions;
 using Hare.Routing;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-
-using RabbitMQ.Client;
 
 namespace Hare.Builders;
 
@@ -60,16 +53,7 @@ internal sealed class HareBuilder(IServiceCollection services) : IHareBuilder
     public IHareMessageBuilder<TMessage> AddHareMessage<TMessage>()
     {
         RegisterConventionBasedOptions<TMessage>();
-
-        Services.AddSingleton<IMessageSerializer<TMessage>, JsonMessageSerializer<TMessage>>();
-        Services.AddSingleton<IMessageSender<TMessage>, RabbitMqMessageSender<TMessage>>();
-        Services.AddScoped<IMessageProvisioner>(static provider => new DefaultMessageProvisioner<TMessage>(
-            provider.GetRequiredService<IOptions<MessageOptions<TMessage>>>(),
-            provider.GetRequiredService<IOptions<HareOptions>>(),
-            provider.GetService<IOptions<MessageSendOptions<TMessage>>>(),
-            provider.GetService<IOptions<MessageReceiveOptions<TMessage>>>(),
-            provider.GetRequiredService<IConnection>()
-        ));
+        Services.AddHareMessage<TMessage>();
 
         return new HareMessageBuilder<TMessage>(this);
     }
@@ -81,10 +65,7 @@ internal sealed class HareBuilder(IServiceCollection services) : IHareBuilder
     THandler
     >() where THandler : class, IMessageHandler<TMessage>
     {
-        AddHareMessage<TMessage>();
-
-        Services.AddScoped<IMessageHandler<TMessage>, THandler>();
-        Services.AddHostedService<HostedListenerService<TMessage>>();
+        Services.AddHareMessage<TMessage, THandler>();
 
         return new HareMessageBuilder<TMessage>(this);
     }
