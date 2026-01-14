@@ -1,13 +1,20 @@
+using Hare.Models;
+
 namespace Hare.Contracts;
 
 /// <summary>
-/// Used to dispatch messages to RabbitMQ.
+/// Sends messages of type <typeparamref name="TMessage"/>.
 /// </summary>
-/// <remarks>For performance reasons, re-use the same scoped instance of the sender to prevent channel churn.</remarks>
-public interface IMessageSender<in TMessage> where TMessage : class
+public interface IMessageSender<TMessage>
 {
     /// <summary>
-    /// Send the <typeparamref name="TMessage" /> to RabbitMQ.
+    /// Attempts to send a <typeparamref name="TMessage" />.
     /// </summary>
-    public ValueTask SendMessageAsync(TMessage message, CancellationToken cancellationToken);
+    ValueTask SendAsync(TMessage message, CancellationToken cancellationToken)
+        => SendAsync(message, default, cancellationToken);
+
+    /// <summary>
+    /// Attempts to send a <typeparamref name="TMessage" />.
+    /// </summary>
+    ValueTask SendAsync(TMessage message, MessageOptions options, CancellationToken cancellationToken);
 }

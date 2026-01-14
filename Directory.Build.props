@@ -1,7 +1,7 @@
 <Project>
 	<!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -16,7 +16,7 @@
 	<PropertyGroup>
 		<Product>Hare</Product>
 		<Company>Hare Contributors</Company>
-		<Copyright>Copyright © 2024 Wannes Gennar</Copyright>
+		<Copyright>Copyright © 2026 Wannes Gennar</Copyright>
 		<Description>A dead-simple, fast, and lightweight .NET messaging library for RabbitMQ.</Description>
 		<PackageProjectUrl>https://github.com/dealloc/hare</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/dealloc/hare</RepositoryUrl>
@@ -37,7 +37,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(IsPackable)' == 'true'">
@@ -46,6 +46,7 @@
 
 	<!-- Automatically expose internals to test projects -->
 	<ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
-		<InternalsVisibleTo Include="$(MSBuildProjectName).Tests" />
+		<InternalsVisibleTo Include="$(MSBuildProjectName).UnitTests" />
+		<InternalsVisibleTo Include="$(MSBuildProjectName).IntegrationTests" />
 	</ItemGroup>
 </Project>

@@ -17,11 +17,13 @@ Hare is for you if:
 ## Features
 
 - **Fully AOT compatible** - Works with [Native AOT](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/) compilation
-- **Dead-letter queue support** - Automatic DLQ configuration and failed message routing
+- **Dead-letter queue support** - Automatic DLQ provisioning with conventional naming and configurable retry
 - **Distributed tracing** - Built-in OpenTelemetry support with correlation ID propagation
 - **Aspire integration** - Works seamlessly with .NET Aspire for cloud-native development
 - **Type-safe messaging** - Leverage generics for compile-time message type safety
-- **Minimal dependencies** - Only depends on RabbitMQ.Client, OpenTelemetry, and Microsoft.Extensions abstractions
+- **Minimal dependencies** - Only depends on RabbitMQ.Client and Microsoft.Extensions abstractions
+- **Conventional routing** - Automatic exchange/queue naming based on message types
+- **Auto-provisioning** - Automatic creation of exchanges, queues, and bindings
 
 ## Installation
 
@@ -53,52 +55,6 @@ Configure and send messages from your producer application:
 using Hare.Extensions;
 using Hare.Contracts;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add RabbitMQ connection
-builder.Services.AddSingleton<IConnection>(sp =>
-{
-    var factory = new ConnectionFactory { HostName = "localhost" };
-    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-});
-
-// Or, if you're using .NET Aspire
-builder.AddRabbitMQClient("rabbitmq");
-
-// Register Hare with OpenTelemetry support and configure message type
-builder.Services
-    .AddHare()
-    .AddHareMessage<OrderPlacedMessage>(config =>
-    {
-        config.Exchange = "orders";
-        config.QueueName = "orders.placed";
-        config.Durable = true;
-        config.JsonTypeInfo = MessageSerializerContext.Default.OrderPlacedMessage;
-    }, listen: false);
-
-var app = builder.Build();
-
-// Use the message sender
-app.MapPost("/orders", async (
-    OrderPlacedMessage message,
-    IMessageSender<OrderPlacedMessage> sender,
-    CancellationToken ct) =>
-{
-    await sender.SendMessageAsync(message, ct);
-    return Results.Ok();
-});
-
-app.Run();
-```
-
-### 3. Consuming Messages
-
-Configure and handle messages in your consumer application:
-
-```csharp
-using Hare.Extensions;
-using Hare.Contracts;
-
 var builder = Host.CreateApplicationBuilder(args);
 
 // Add RabbitMQ connection
@@ -111,63 +67,180 @@ builder.Services.AddSingleton<IConnection>(sp =>
 // Or, if you're using .NET Aspire
 builder.AddRabbitMQClient("rabbitmq");
 
-// Register Hare, configure message type, and register handler
+// Register Hare with the fluent builder API
 builder.Services
     .AddHare()
-    .AddHareMessage<OrderPlacedMessage>(config =>
-    {
-        config.Exchange = "orders";
-        config.QueueName = "orders.placed";
-        config.Durable = true;
-        config.DeadletterExchange = "orders.dead-letter";
-        config.DeadletterQueueName = "orders.placed.dead-letter";
-        config.JsonTypeInfo = MessageSerializerContext.Default.OrderPlacedMessage;
-    }, listen: true)
-    .AddScoped<IMessageHandler<OrderPlacedMessage>, OrderPlacedHandler>();
+    .WithConventionalRouting()               // Use default routing conventions
+    .WithAutoProvisioning()                  // Automatically create exchanges/queues
+    .WithJsonSerializerContext(MessageSerializerContext.Default)
+    .AddHareMessage<OrderPlacedMessage>();   // Register message for sending
 
 var host = builder.Build();
+
+// Provision exchanges and queues before starting
+await host.RunHareProvisioning(CancellationToken.None);
+
+host.Run();
+```
+
+To send messages, inject `IMessageSender<TMessage>`:
+
+```csharp
+public class OrderService(IMessageSender<OrderPlacedMessage> sender)
+{
+    public async Task PlaceOrderAsync(Order order, CancellationToken ct)
+    {
+        var message = new OrderPlacedMessage(order.Id, order.CustomerId, order.Amount);
+        await sender.SendAsync(message, ct);
+    }
+}
+```
+
+### 3. Consuming Messages
+
+Configure and handle messages in your consumer application:
+
+```csharp
+using Hare.Extensions;
+using Hare.Contracts;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+// Add RabbitMQ connection (same as producer)
+builder.AddRabbitMQClient("rabbitmq");
+
+// Register Hare with message handler
+builder.Services
+    .AddHare()
+    .WithConventionalRouting()
+    .WithAutoProvisioning()
+    .WithJsonSerializerContext(MessageSerializerContext.Default)
+    .AddHareMessage<OrderPlacedMessage, OrderPlacedHandler>();  // Register with handler
+
+var host = builder.Build();
+await host.RunHareProvisioning(CancellationToken.None);
 host.Run();
 ```
 
 ### 4. Implement Message Handler
 
 ```csharp
+using Hare.Contracts;
+using Hare.Models;
+
 public class OrderPlacedHandler(ILogger<OrderPlacedHandler> logger) : IMessageHandler<OrderPlacedMessage>
 {
-    public async ValueTask HandleAsync(OrderPlacedMessage message, CancellationToken cancellationToken)
+    public ValueTask HandleAsync(
+        OrderPlacedMessage message,
+        MessageContext context,
+        CancellationToken cancellationToken)
     {
         logger.LogInformation("Processing order {OrderId} for customer {CustomerId}",
             message.OrderId, message.CustomerId);
 
-        // Your business logic here
-        await Task.CompletedTask;
+        // Access message metadata via context
+        // context.Redelivered, context.Exchange, context.RoutingKey, context.Properties
+
+        return ValueTask.CompletedTask;
     }
 }
 ```
 
-## Dead-Letter Queue Support
+## Fluent Configuration API
 
-Hare automatically handles failed message processing with dead-letter queues:
+Hare uses a fluent builder pattern for configuration:
 
-1. **Automatic DLQ Setup** - Both producer and consumer create necessary exchanges and queues
-2. **Requeue Logic** - Failed messages are requeued once, then routed to DLQ
-3. **Configuration** - Both `DeadletterExchange` and `DeadletterQueueName` must be set together
+### Global Configuration
 
 ```csharp
-config.DeadletterExchange = "orders.dead-letter";
-config.DeadletterQueueName = "orders.placed.dead-letter";
+builder.Services
+    .AddHare()
+    .WithConventionalRouting()              // Enable default routing conventions
+    .WithConventionalRouting<MyConvention>() // Or use custom routing convention
+    .WithAutoProvisioning()                  // Auto-create exchanges/queues
+    .WithJsonSerializerContext(context);     // Add JSON type info for AOT
 ```
 
-When a message handler throws an exception:
-- **First failure**: Message is nacked and requeued
-- **Second failure**: Message is sent to the dead-letter queue
+### Per-Message Configuration
+
+```csharp
+builder.Services
+    .AddHare()
+    .WithConventionalRouting()
+    .AddHareMessage<OrderMessage, OrderHandler>()
+        .WithQueue("orders-queue")                   // Override queue name
+        .WithExchange("orders", "direct")            // Override exchange
+        .WithRoutingKey("orders.placed")             // Override routing key
+        .WithConcurrency(4)                          // Number of concurrent listeners
+        .WithDeadLetterExchange("orders.dlx")        // Override DLX name
+        .WithDeadLetterRoutingKey("orders.failed")   // Override DLQ routing key
+        .WithAutoProvisioning(false);                // Disable auto-provisioning for this message
+```
+
+## Conventional Routing
+
+When `WithConventionalRouting()` is enabled, Hare automatically derives routing configuration from message type names:
+
+- **Queue name**: Message type name in kebab-case (e.g., `OrderPlacedMessage` → `order-placed-message`)
+- **Routing key**: Same as queue name
+- **Exchange**: Entry assembly name in kebab-case
+- **Exchange type**: `direct`
+- **Dead-letter exchange**: `{exchange}.dlx`
+- **Dead-letter queue**: `{queue}.dlq`
+
+You can override any convention per-message using the fluent builder methods.
+
+## Dead-Letter Queue Support
+
+Hare provides built-in dead-letter queue (DLQ) support with automatic provisioning. Dead-lettering is **enabled by default** when using conventional routing.
+
+### How It Works
+
+- **First failure**: Message is nacked and requeued for retry
+- **Second failure**: Message is nacked without requeue and routed to the dead-letter exchange
+
+### Conventional DLQ Naming
+
+When using `WithConventionalRouting()`, Hare automatically generates DLQ names:
+
+- **Dead-letter exchange**: `{exchange-name}.dlx`
+- **Dead-letter queue**: `{queue-name}.dlq`
+- **Exchange type**: `direct`
+
+For example, a message type `OrderPlacedMessage` in assembly `MyApp` would get:
+- DLX: `my-app.dlx`
+- DLQ: `order-placed-message.dlq`
+
+### Custom DLQ Configuration
+
+Override the conventional naming per-message:
+
+```csharp
+builder.Services
+    .AddHare()
+    .WithConventionalRouting()
+    .AddHareMessage<OrderMessage, OrderHandler>()
+        .WithDeadLetterExchange("orders.dlx", "direct")
+        .WithDeadLetterRoutingKey("orders.failed");
+```
+
+### Disabling Dead-Lettering
+
+To disable dead-lettering for a specific message type:
+
+```csharp
+.AddHareMessage<TransientMessage, TransientHandler>()
+    .WithDeadLetter(false);
+```
 
 ## OpenTelemetry & Distributed Tracing
 
 Hare includes built-in OpenTelemetry support with automatic correlation ID propagation:
 
 ```csharp
-builder.Services.AddHare(); // Adds "Hare" ActivitySource
+// Add Hare's ActivitySource to your tracing configuration
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource("Hare.*"));
 
 // The library automatically:
 // - Sets correlation ID from Activity.Current?.Id when publishing
@@ -177,6 +250,21 @@ builder.Services.AddHare(); // Adds "Hare" ActivitySource
 
 This integrates seamlessly with .NET Aspire's dashboard for end-to-end tracing.
 
+## Auto-Provisioning
+
+When `WithAutoProvisioning()` is enabled, Hare automatically creates the required RabbitMQ resources before your application starts:
+
+```csharp
+var host = builder.Build();
+
+// This creates exchanges, queues, and bindings
+await host.RunHareProvisioning(CancellationToken.None);
+
+host.Run();
+```
+
+You can enable/disable auto-provisioning globally or per-message type.
+
 ## AOT Compatibility
 
 Hare is fully compatible with Native AOT compilation. To ensure AOT compatibility:
@@ -185,16 +273,34 @@ Hare is fully compatible with Native AOT compilation. To ensure AOT compatibilit
 
 ```csharp
 [JsonSerializable(typeof(OrderPlacedMessage))]
+[JsonSerializable(typeof(CustomerCreatedMessage))]
 public partial class MessageSerializerContext : JsonSerializerContext { }
 ```
 
-2. **Provide `JsonTypeInfo`** when configuring messages:
+2. **Register the context** with Hare:
 
 ```csharp
-config.JsonTypeInfo = MessageSerializerContext.Default.OrderPlacedMessage;
+builder.Services
+    .AddHare()
+    .WithJsonSerializerContext(MessageSerializerContext.Default);
 ```
 
-3. **Use records for immutable messages** as shown in the examples above
+3. **Use records** for immutable messages as shown in the examples above
+
+## MessageContext
+
+The `MessageContext` struct provides access to message metadata in your handlers:
+
+```csharp
+public readonly struct MessageContext
+{
+    public bool Redelivered { get; }           // Whether this is a redelivery
+    public string Exchange { get; }            // Source exchange name
+    public string RoutingKey { get; }          // Routing key used
+    public IReadOnlyBasicProperties Properties { get; }  // RabbitMQ properties
+    public ReadOnlyMemory<byte> Payload { get; }         // Raw message bytes
+}
+```
 
 ## License
 
@@ -202,4 +308,4 @@ config.JsonTypeInfo = MessageSerializerContext.Default.OrderPlacedMessage;
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
