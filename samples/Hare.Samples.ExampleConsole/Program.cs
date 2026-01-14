@@ -1,7 +1,7 @@
 using Hare;
 using Hare.Extensions;
 using Hare.Samples.ExampleConsole;
-using Hare.Samples.ExampleConsole.Handles;
+using Hare.Samples.ExampleConsole.Handlers;
 using Hare.Samples.ExampleConsole.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);

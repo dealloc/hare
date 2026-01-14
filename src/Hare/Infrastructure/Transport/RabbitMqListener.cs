@@ -111,16 +111,16 @@ public sealed class RabbitMqListener<TMessage>(
         }
         catch (Exception)
         {
+            var requeue = @event.Redelivered is false;
+            if (requeue is false && receiveOptions.Value.UseDeadLettering)
+                logger.LogWarning("Moving message {DeliveryTag} to DLX", @event.DeliveryTag);
+
             await _channel!.BasicNackAsync(
                 deliveryTag: @event.DeliveryTag,
                 multiple: false,
-                requeue: @event.Redelivered is false,
+                requeue: requeue,
                 cancellationToken: @event.CancellationToken
             );
-
-            await _channel!.CloseAsync(541, "Handler threw an error", @event.CancellationToken);
-
-            throw;
         }
     }
 

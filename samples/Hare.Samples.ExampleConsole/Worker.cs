@@ -12,11 +12,8 @@ public class Worker(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                await messageSender.SendAsync(new ExampleMessage("Hello World"), stoppingToken);
-            }
+            logger.LogInformation("Worker sending message: {time}", DateTimeOffset.Now);
+            await messageSender.SendAsync(new ExampleMessage($"{DateTimeOffset.Now}"), stoppingToken);
 
             await Task.Delay(1000, stoppingToken);
         }

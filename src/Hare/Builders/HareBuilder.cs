@@ -101,6 +101,13 @@ internal sealed class HareBuilder(IServiceCollection services) : IHareBuilder
                 options.QueueName = convention.GetQueueName(messageType);
                 options.RoutingKey = convention.GetRoutingKey(messageType);
                 options.Exchange = convention.GetExchange(messageType);
+
+                if (options.UseDeadLettering)
+                {
+                    options.DeadLetterRoutingKey = convention.GetDeadLetterRoutingKey(messageType);
+                    options.DeadLetterExchangeName = convention.GetDeadLetterExchange(messageType);
+                    options.DeadLetterExchangeType = convention.GetDeadLetterExchangeType(messageType);
+                }
             });
         });
     }

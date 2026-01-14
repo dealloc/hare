@@ -17,7 +17,7 @@ Hare is for you if:
 ## Features
 
 - **Fully AOT compatible** - Works with [Native AOT](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/) compilation
-- **Dead-letter queue support** - Automatic requeue on first failure, routes to DLQ on second
+- **Dead-letter queue support** - Automatic DLQ provisioning with conventional naming and configurable retry
 - **Distributed tracing** - Built-in OpenTelemetry support with correlation ID propagation
 - **Aspire integration** - Works seamlessly with .NET Aspire for cloud-native development
 - **Type-safe messaging** - Leverage generics for compile-time message type safety
@@ -167,12 +167,14 @@ builder.Services
 builder.Services
     .AddHare()
     .WithConventionalRouting()
-    .AddHareMessage<OrderMessage>()
-        .WithQueue("orders-queue")           // Override queue name
-        .WithExchange("orders", "direct")    // Override exchange
-        .WithRoutingKey("orders.placed")     // Override routing key
-        .WithConcurrency(4)                  // Number of concurrent listeners
-        .WithAutoProvisioning(false);        // Disable auto-provisioning for this message
+    .AddHareMessage<OrderMessage, OrderHandler>()
+        .WithQueue("orders-queue")                   // Override queue name
+        .WithExchange("orders", "direct")            // Override exchange
+        .WithRoutingKey("orders.placed")             // Override routing key
+        .WithConcurrency(4)                          // Number of concurrent listeners
+        .WithDeadLetterExchange("orders.dlx")        // Override DLX name
+        .WithDeadLetterRoutingKey("orders.failed")   // Override DLQ routing key
+        .WithAutoProvisioning(false);                // Disable auto-provisioning for this message
 ```
 
 ## Conventional Routing
@@ -183,17 +185,53 @@ When `WithConventionalRouting()` is enabled, Hare automatically derives routing 
 - **Routing key**: Same as queue name
 - **Exchange**: Entry assembly name in kebab-case
 - **Exchange type**: `direct`
+- **Dead-letter exchange**: `{exchange}.dlx`
+- **Dead-letter queue**: `{queue}.dlq`
 
 You can override any convention per-message using the fluent builder methods.
 
 ## Dead-Letter Queue Support
 
-Hare handles failed message processing with automatic requeue logic:
+Hare provides built-in dead-letter queue (DLQ) support with automatic provisioning. Dead-lettering is **enabled by default** when using conventional routing.
+
+### How It Works
 
 - **First failure**: Message is nacked and requeued for retry
-- **Second failure**: Message is nacked without requeue (routes to DLQ if configured)
+- **Second failure**: Message is nacked without requeue and routed to the dead-letter exchange
 
-To configure a dead-letter queue, set up DLQ arguments at the RabbitMQ broker level or via queue arguments when provisioning.
+### Conventional DLQ Naming
+
+When using `WithConventionalRouting()`, Hare automatically generates DLQ names:
+
+- **Dead-letter exchange**: `{exchange-name}.dlx`
+- **Dead-letter queue**: `{queue-name}.dlq`
+- **Exchange type**: `direct`
+
+For example, a message type `OrderPlacedMessage` in assembly `MyApp` would get:
+- DLX: `my-app.dlx`
+- DLQ: `order-placed-message.dlq`
+
+### Custom DLQ Configuration
+
+Override the conventional naming per-message:
+
+```csharp
+builder.Services
+    .AddHare()
+    .WithConventionalRouting()
+    .AddHareMessage<OrderMessage, OrderHandler>()
+        .WithDeadLetterExchange("orders.dlx", "direct")
+        .WithDeadLetterRoutingKey("orders.failed");
+```
+
+### Disabling Dead-Lettering
+
+To disable dead-lettering for a specific message type:
+
+```csharp
+.AddHareMessage<TransientMessage, TransientHandler>()
+    .WithDeadLetter(false);
+```
 
 ## OpenTelemetry & Distributed Tracing
 

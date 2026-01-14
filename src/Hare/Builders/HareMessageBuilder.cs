@@ -37,6 +37,18 @@ internal sealed class HareMessageBuilder<TMessage>(HareBuilder parent) : IHareMe
     }
 
     /// <inheritdoc />
+    public IHareMessageBuilder<TMessage> WithDeadLetter(bool useDeadLettering = true)
+    {
+        // PostConfigure runs after IConfigureOptions, allowing overrides of convention-based values
+        Services.PostConfigure<MessageReceiveOptions<TMessage>>(options =>
+        {
+            options.UseDeadLettering = useDeadLettering;
+        });
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public IHareMessageBuilder<TMessage> WithExchange(string exchange, string exchangeType = "direct")
     {
         Services.PostConfigure<MessageSendOptions<TMessage>>(options =>
@@ -54,6 +66,19 @@ internal sealed class HareMessageBuilder<TMessage>(HareBuilder parent) : IHareMe
     }
 
     /// <inheritdoc />
+    public IHareMessageBuilder<TMessage> WithDeadLetterExchange(string exchange, string exchangeType = "direct")
+    {
+        Services.PostConfigure<MessageReceiveOptions<TMessage>>(options =>
+        {
+            options.UseDeadLettering = true;
+            options.DeadLetterExchangeName = exchange;
+            options.DeadLetterExchangeType = exchangeType;
+        });
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public IHareMessageBuilder<TMessage> WithRoutingKey(string routingKey)
     {
         Services.PostConfigure<MessageSendOptions<TMessage>>(options =>
@@ -64,6 +89,18 @@ internal sealed class HareMessageBuilder<TMessage>(HareBuilder parent) : IHareMe
         Services.PostConfigure<MessageReceiveOptions<TMessage>>(options =>
         {
             options.RoutingKey = routingKey;
+        });
+
+        return this;
+    }
+
+    /// <inheritdoc />
+    public IHareMessageBuilder<TMessage> WithDeadLetterRoutingKey(string routingKey)
+    {
+        Services.PostConfigure<MessageReceiveOptions<TMessage>>(options =>
+        {
+            options.UseDeadLettering = true;
+            options.DeadLetterRoutingKey = routingKey;
         });
 
         return this;

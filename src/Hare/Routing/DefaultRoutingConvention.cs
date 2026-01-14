@@ -29,11 +29,23 @@ public class DefaultRoutingConvention : IRoutingConvention
         => GetQueueName(messageType);
 
     /// <inheritdoc />
+    public string GetDeadLetterRoutingKey(Type messageType)
+        => $"{GetQueueName(messageType)}.dlq";
+
+    /// <inheritdoc />
     public virtual string GetExchange(Type messageType)
         => ToKebabCase(Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty);
 
     /// <inheritdoc />
+    public string GetDeadLetterExchange(Type messageType)
+        => $"{GetExchange(messageType)}.dlx";
+
+    /// <inheritdoc />
     public virtual string GetExchangeType(Type messageType)
+        => ExchangeType.Direct;
+
+    /// <inheritdoc />
+    public string GetDeadLetterExchangeType(Type messageType)
         => ExchangeType.Direct;
 
     /// <summary>

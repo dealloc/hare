@@ -25,6 +25,11 @@ public interface IHareMessageBuilder<TMessage>
     IHareMessageBuilder<TMessage> WithQueue(string queueName);
 
     /// <summary>
+    /// Sets whether to use dead-lettering, overriding any convention.
+    /// </summary>
+    IHareMessageBuilder<TMessage> WithDeadLetter(bool useDeadLettering = true);
+
+    /// <summary>
     /// Sets the exchange for this message, overriding any convention.
     /// </summary>
     /// <param name="exchange">The exchange name to use.</param>
@@ -32,10 +37,25 @@ public interface IHareMessageBuilder<TMessage>
     IHareMessageBuilder<TMessage> WithExchange(string exchange, string exchangeType = "direct");
 
     /// <summary>
+    /// Sets the exchange for this message's dead-letter, overriding any convention.
+    /// </summary>
+    /// <param name="exchange">The exchange name to use.</param>
+    /// <param name="exchangeType">The exchange type. Defaults to <c>"direct"</c>.</param>
+    /// <remarks>This automatically enables dead-lettering.</remarks>
+    IHareMessageBuilder<TMessage> WithDeadLetterExchange(string exchange, string exchangeType = "direct");
+
+    /// <summary>
     /// Sets the routing key for this message, overriding any convention.
     /// </summary>
     /// <param name="routingKey">The routing key to use.</param>
     IHareMessageBuilder<TMessage> WithRoutingKey(string routingKey);
+
+    /// <summary>
+    /// Sets the routing key for this message's dead-letter, overriding any convention.
+    /// </summary>
+    /// <param name="routingKey">The routing key to use.</param>
+    /// <remarks>This automatically enables dead-lettering.</remarks>
+    IHareMessageBuilder<TMessage> WithDeadLetterRoutingKey(string routingKey);
 
     /// <summary>
     /// Sets the number of concurrent listeners for this message type.

@@ -42,13 +42,54 @@ public sealed class DefaultMessageProvisioner<TMessage>(
 
         if (receiveOptions is not null)
         {
+            var arguments = receiveOptions.Value.Arguments;
+            if (receiveOptions.Value.UseDeadLettering && string.IsNullOrWhiteSpace(receiveOptions.Value.DeadLetterExchangeName) is false)
+            {
+                arguments["x-dead-letter-exchange"] = receiveOptions.Value.DeadLetterExchangeName;
+                arguments["x-dead-letter-routing-key"] = receiveOptions.Value.DeadLetterRoutingKey;
+
+                await channel.ExchangeDeclareAsync(
+                    exchange: receiveOptions.Value.DeadLetterExchangeName,
+                    type: receiveOptions.Value.DeadLetterExchangeType ?? ExchangeType.Direct,
+                    durable: receiveOptions.Value.Durable,
+                    autoDelete: receiveOptions.Value.AutoDelete,
+                    arguments: new Dictionary<string, object?>(),
+                    passive: receiveOptions.Value.Passive,
+                    noWait: receiveOptions.Value.NoWait,
+                    cancellationToken: cancellationToken
+                );
+
+                var dlq = await channel.QueueDeclareAsync(
+                    queue: receiveOptions.Value.DeadLetterRoutingKey ??
+                           throw new ArgumentNullException(nameof(receiveOptions.Value.DeadLetterRoutingKey)),
+                    durable: receiveOptions.Value.Durable,
+                    exclusive: receiveOptions.Value.Exclusive,
+                    autoDelete: receiveOptions.Value.AutoDelete,
+                    arguments: new Dictionary<string, object?>(),
+                    passive: receiveOptions.Value.Passive,
+                    noWait: receiveOptions.Value.NoWait,
+                    cancellationToken: cancellationToken
+                );
+
+                if (string.IsNullOrWhiteSpace(receiveOptions.Value.DeadLetterExchangeName) is false)
+                {
+                    await channel.QueueBindAsync(
+                        queue: dlq.QueueName,
+                        exchange: receiveOptions.Value.DeadLetterExchangeName,
+                        routingKey: receiveOptions.Value.DeadLetterRoutingKey ?? dlq.QueueName,
+                        noWait: receiveOptions.Value.NoWait,
+                        cancellationToken: cancellationToken
+                    );
+                }
+            }
+
             var queue = await channel.QueueDeclareAsync(
                 queue: receiveOptions.Value.QueueName ??
                        throw new ArgumentNullException(nameof(receiveOptions.Value.QueueName)),
                 durable: receiveOptions.Value.Durable,
                 exclusive: receiveOptions.Value.Exclusive,
                 autoDelete: receiveOptions.Value.AutoDelete,
-                arguments: receiveOptions.Value.Arguments,
+                arguments: arguments,
                 passive: receiveOptions.Value.Passive,
                 noWait: receiveOptions.Value.NoWait,
                 cancellationToken: cancellationToken

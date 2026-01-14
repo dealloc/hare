@@ -17,6 +17,27 @@ public sealed class MessageReceiveOptions<TMessage>
     public string? QueueName { get; set; }
 
     /// <summary>
+    /// The name of the dead-letter exchange to use.
+    /// </summary>
+    public string? DeadLetterExchangeName { get; set; }
+
+    /// <summary>
+    /// The type of the dead-letter exchange to use.
+    /// </summary>
+    public string? DeadLetterExchangeType { get; set; }
+
+    /// <summary>
+    /// The routing key to use when sending messages to the dead-letter exchange.
+    /// If set to <c>null</c> the message's routing key will be used instead.
+    /// </summary>
+    public string? DeadLetterRoutingKey { get; set; }
+
+    /// <summary>
+    /// Whether to use a dead-letter queue for messages that fail.
+    /// </summary>
+    public bool UseDeadLettering { get; set; } = true;
+
+    /// <summary>
     /// The routing key to use when binding to the <see cref="Exchange" />.
     /// If set to <c>null</c> the queue name will be used instead.
     /// </summary>
