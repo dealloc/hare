@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="CommunityToolkit.Aspire.Hosting.LavinMQ" Version="13.0.0" />
+      <PackageReference Include="CommunityToolkit.Aspire.Hosting.LavinMQ" Version="13.1.0" />
     </ItemGroup>
 
     <ItemGroup>
