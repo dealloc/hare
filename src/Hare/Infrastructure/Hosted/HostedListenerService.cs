@@ -29,12 +29,7 @@ internal sealed class HostedListenerService<TMessage>(
         for (ulong i = 0; i < listenerCount; i++)
         {
             logger.LogTrace("Starting listener #{ListenerIndex} for {MessageType}", i, typeof(TMessage).Name);
-            workers[i] = Task.Factory.StartNew(
-                () => LaunchAndMonitorListener(cancellationToken),
-                cancellationToken: cancellationToken,
-                creationOptions: TaskCreationOptions.LongRunning,
-                TaskScheduler.Default
-            );
+            workers[i] = LaunchAndMonitorListener(cancellationToken);
         }
 
         await Task
@@ -45,7 +40,6 @@ internal sealed class HostedListenerService<TMessage>(
     /// <summary>
     /// Launched for each listener: creates, starts and monitors the listener.
     /// </summary>
-    /// <param name="cancellationToken"></param>
     private async Task LaunchAndMonitorListener(CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
