@@ -1,5 +1,4 @@
 using Hare.Contracts;
-using Hare.Contracts.Serialization;
 using Hare.Samples.ExampleConsole.Messages;
 
 namespace Hare.Samples.ExampleConsole;

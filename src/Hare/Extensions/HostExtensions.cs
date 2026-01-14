@@ -17,7 +17,7 @@ public static class HostExtensions
     /// </summary>
     public static async Task RunHareProvisioning(this IHost host, CancellationToken cancellationToken)
     {
-        var source = new ActivitySource($"{Constants.ACTIVITY_PREFIX}");
+        using var source = new ActivitySource($"{Constants.ACTIVITY_PREFIX}.Provisioning");
         await using var scope = host.Services.CreateAsyncScope();
         var provisioners = scope.ServiceProvider.GetServices<IMessageProvisioner>();
 

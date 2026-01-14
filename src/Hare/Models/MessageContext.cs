@@ -5,7 +5,7 @@ namespace Hare.Models;
 /// <summary>
 /// Contains additional contextual information for a message.
 /// </summary>
-public struct MessageContext
+public readonly struct MessageContext
 {
     /// <summary>
     /// Whether this message was redelivered.
