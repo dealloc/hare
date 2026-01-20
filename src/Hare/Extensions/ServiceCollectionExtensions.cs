@@ -51,6 +51,7 @@ public static class ServiceCollectionExtensions
     {
         services.Configure(configure ?? (static _ => { }));
         services.Configure(configureSend ?? (static _ => { }));
+        services.Configure<MessageReceiveOptions<TMessage>>(static _ => { });
         services.AddSingleton<IMessageSerializer<TMessage>, JsonMessageSerializer<TMessage>>();
         services.AddSingleton<IMessageSender<TMessage>, RabbitMqMessageSender<TMessage>>();
         services.AddTransient<IListener<TMessage>, RabbitMqListener<TMessage>>();
@@ -80,7 +81,6 @@ public static class ServiceCollectionExtensions
         Action<MessageReceiveOptions<TMessage>>? configureReceive = null
     ) where THandler : class, IMessageHandler<TMessage>
         => AddHareMessage(services, configure, configureSend)
-            .Configure(configureReceive ?? (static _ => { }))
             .AddScoped<IMessageHandler<TMessage>, THandler>()
             .AddHostedService<HostedListenerService<TMessage>>();
 }
