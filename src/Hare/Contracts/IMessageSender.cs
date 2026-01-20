@@ -10,11 +10,17 @@ public interface IMessageSender<TMessage>
     /// <summary>
     /// Attempts to send a <typeparamref name="TMessage" />.
     /// </summary>
-    ValueTask SendAsync(TMessage message, CancellationToken cancellationToken)
+    /// <returns>
+    /// A unique identifier for the message sent, if one is available.
+    /// </returns>
+    ValueTask<string?> SendAsync(TMessage message, CancellationToken cancellationToken)
         => SendAsync(message, default, cancellationToken);
 
     /// <summary>
     /// Attempts to send a <typeparamref name="TMessage" />.
     /// </summary>
-    ValueTask SendAsync(TMessage message, MessageOptions options, CancellationToken cancellationToken);
+    /// <returns>
+    /// A unique identifier for the message sent, if one is available.
+    /// </returns>
+    ValueTask<string?> SendAsync(TMessage message, MessageOptions options, CancellationToken cancellationToken);
 }

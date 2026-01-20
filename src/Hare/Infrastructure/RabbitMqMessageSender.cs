@@ -24,11 +24,11 @@ public sealed class RabbitMqMessageSender<TMessage>(
     private static readonly ActivitySource _source = new($"{Constants.ACTIVITY_PREFIX}.RabbitMqMessageSender#{typeof(TMessage).Name}");
 
     /// <inheritdoc />
-    public ValueTask SendAsync(TMessage message, CancellationToken cancellationToken)
+    public ValueTask<string?> SendAsync(TMessage message, CancellationToken cancellationToken)
         => SendAsync(message, default, cancellationToken);
 
     /// <inheritdoc />
-    public async ValueTask SendAsync(TMessage message, MessageOptions options, CancellationToken cancellationToken)
+    public async ValueTask<string?> SendAsync(TMessage message, MessageOptions options, CancellationToken cancellationToken)
     {
         using var activity = _source.StartActivity(nameof(SendAsync), ActivityKind.Producer);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
@@ -52,5 +52,7 @@ public sealed class RabbitMqMessageSender<TMessage>(
             body: payload,
             cancellationToken: cancellationToken
         );
+
+        return properties.MessageId;
     }
 }
