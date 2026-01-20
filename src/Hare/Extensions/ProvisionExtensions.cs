@@ -10,15 +10,15 @@ namespace Hare.Extensions;
 /// <summary>
 /// Contains extension methods for <see cref="IHost"/>.
 /// </summary>
-public static class HostExtensions
+public static class ProvisionExtensions
 {
     /// <summary>
     /// Runs all provisioning for registered messages.
     /// </summary>
-    public static async Task RunHareProvisioning(this IHost host, CancellationToken cancellationToken)
+    public static async Task RunHareProvisioning(this IServiceProvider services, CancellationToken cancellationToken)
     {
         using var source = new ActivitySource($"{Constants.ACTIVITY_PREFIX}.Provisioning");
-        await using var scope = host.Services.CreateAsyncScope();
+        await using var scope = services.CreateAsyncScope();
         var provisioners = scope.ServiceProvider.GetServices<IMessageProvisioner>();
 
         foreach (var provisioner in provisioners)
@@ -36,4 +36,10 @@ public static class HostExtensions
             }
         }
     }
+
+    /// <summary>
+    /// Runs all provisioning for registered messages.
+    /// </summary>
+    public static async Task RunHareProvisioning(this IHost host, CancellationToken cancellationToken)
+        => await RunHareProvisioning(host.Services, cancellationToken);
 }
